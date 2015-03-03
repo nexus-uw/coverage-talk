@@ -8,7 +8,7 @@ var coverageEnforcer = require("gulp-istanbul-enforcer");
 var  gulpSequence = require('gulp-sequence');
 var gutil = require('gulp-util')
 
-require('istanbul/lib/register-plugins');
+require('istanbul/lib/register-plugins'); //need to load the check coverage plugin
   var commandFactory = require('istanbul/lib/command')
 
 var clientCoverageEnforcerOptions = {
@@ -18,7 +18,6 @@ var clientCoverageEnforcerOptions = {
           lines : 100,
           functions : 100
         },
-        //coverageDirectory : coverageReportConfig.dir,
         rootDirectory:'.',
       };
 
@@ -50,14 +49,13 @@ gulp.task('enforce-client-coverage',function(cb){
       '--lines=' + clientCoverageEnforcerOptions.thresholds.lines,
       '--functions=' + clientCoverageEnforcerOptions.thresholds.functions,
       '--root=' + clientCoverageEnforcerOptions.rootDirectory,
-
-       'coverage/client/*/coverage*.json',
+      'coverage/client/*/coverage*.json',
     ];
 
 
       checkCoverageCommand.run(args,function(err){
         if(err){
-          cb(new gutil.PluginError('enforce-client-coverage-2', err, {showStack: false}));
+          cb(new gutil.PluginError('enforce-client-coverage', err, {showStack: false}));
         }else{
           cb();
         }
@@ -68,11 +66,15 @@ gulp.task('enforce-client-coverage',function(cb){
 
 gulp.task('client-ci',gulpSequence('karma-single','enforce-client-coverage'));
 
-
 var coverageReportConfig = {
-  dir: 'coverage/sever',
-  reporters : ['json','text-summary','html']
-};
+    dir: 'coverage/server',
+    reporters : [
+    'json', //for ensuring minimum test coverage
+    'text-summary', //for command line display
+    'html' //for display on circle ci
+    ]
+  };
+
 var coverageEnforcerOptions = {
         thresholds : {
           statements : 100,
@@ -80,9 +82,8 @@ var coverageEnforcerOptions = {
           lines : 100,
           functions : 100
         },
-        coverageDirectory : coverageReportConfig.dir,
-        rootDirectory:'.',
-        verbose : true
+        coverageDirectory : coverageReportConfig.dir +'/coverage*.json',
+        rootDirectory:'.'
       };
 
 gulp.task('prepare-server-coverage',function(){
@@ -123,3 +124,12 @@ gulp.task('enforce-server-coverage-2',function(cb){
 });
 
 gulp.task('server-ci', gulpSequence('prepare-server-coverage','mocha-single','enforce-server-coverage-2'));
+
+gulp.task('pre-mocha',rg.prepareMochaTestCoverage({filesToCover : ['server/**/*.spec.js']}));
+gulp.task('rgmocha',rg.mocha({files:['server/**/*.spec.js']}));
+gulp.task('rgcovermocha',rg.ensureTestCoverage({coverageDirectory :'coverage/server'}))
+gulp.task('server-ci-rg',gulpSequence('pre-mocha','rgmocha','rgcovermocha'));
+
+gulp.task('rgkarma',rg.karma());
+gulp.task('rgcoverkarma',rg.ensureTestCoverage({coverageDirectory :'coverage/client'}))
+gulp.task('client-ci-rg',gulpSequence('rgkarma','rgcoverkarma'))
