@@ -1,4 +1,4 @@
-describe('lib1-service: ', function () {
+xdescribe('lib1-service: ', function () {
   beforeEach(module('lib1'));
   var lib1;
   beforeEach(inject(function ($injector) {

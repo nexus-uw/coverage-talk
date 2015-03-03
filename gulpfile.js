@@ -11,12 +11,22 @@ var gutil = require('gulp-util')
 require('istanbul/lib/register-plugins');
   var commandFactory = require('istanbul/lib/command')
 
-gulp.task('prepare-client-coverage',function(){
-
-})
+var clientCoverageEnforcerOptions = {
+        thresholds : {
+          statements : 100,
+          branches : 100,
+          lines : 100,
+          functions : 100
+        },
+        //coverageDirectory : coverageReportConfig.dir,
+        rootDirectory:'.',
+      };
 
 gulp.task('karma-single', function(){
-  gulp.src(,{read:false})
+  return gulp.src([
+    'client/bower_components/angular/angular.js',
+    'client/bower_components/angular-mocks/angular-mocks.js',
+    'client/app/**/*.js'])
   .pipe(karma({
     plugins : [ 'karma-coverage','karma-mocha','karma-chai','karma-phantomjs-launcher'],
     preprocessors : {'./client/app/**/!(*.spec).js':'coverage'},
@@ -25,22 +35,43 @@ gulp.task('karma-single', function(){
     browsers: ['PhantomJS'],
     logLevel:'debug',
     coverageReporter: {
-       type : 'json'
-       dir : './coverage/'
+       reporters: [{type:'json'},{type:'html'},{type:'text-summary'}],
+       dir : './coverage/client/'
      }
   }))
 });
 
+gulp.task('enforce-client-coverage',function(cb){
+  var checkCoverageCommand = commandFactory.create('check-coverage');
+
+    var args=  [
+      '--statements=' + clientCoverageEnforcerOptions.thresholds.statements,
+      '--branches=' + clientCoverageEnforcerOptions.thresholds.branches,
+      '--lines=' + clientCoverageEnforcerOptions.thresholds.lines,
+      '--functions=' + clientCoverageEnforcerOptions.thresholds.functions,
+      '--root=' + clientCoverageEnforcerOptions.rootDirectory,
+
+       'coverage/client/*/coverage*.json',
+    ];
 
 
-gulp.task('client-ci',
-   gulpSequence('karma-single','enforce-client-coverage')
+      checkCoverageCommand.run(args,function(err){
+        if(err){
+          cb(new gutil.PluginError('enforce-client-coverage-2', err, {showStack: false}));
+        }else{
+          cb();
+        }
+      })
 
-)
+
+});
+
+gulp.task('client-ci',gulpSequence('karma-single','enforce-client-coverage'));
 
 
 var coverageReportConfig = {
-  dir: 'coverage'
+  dir: 'coverage/sever',
+  reporters : ['json','text-summary','html']
 };
 var coverageEnforcerOptions = {
         thresholds : {
@@ -91,7 +122,4 @@ gulp.task('enforce-server-coverage-2',function(cb){
 
 });
 
-gulp.task('server-ci',
-   gulpSequence('prepare-server-coverage','mocha-single','enforce-server-coverage-2')
-
-)
+gulp.task('server-ci', gulpSequence('prepare-server-coverage','mocha-single','enforce-server-coverage-2'));
