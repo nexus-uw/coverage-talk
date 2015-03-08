@@ -130,6 +130,23 @@ gulp.task('rgmocha',rg.mocha({files:['server/**/*.spec.js']}));
 gulp.task('rgcovermocha',rg.ensureTestCoverage({coverageDirectory :'coverage/server'}))
 gulp.task('server-ci-rg',gulpSequence('pre-mocha','rgmocha','rgcovermocha'));
 
-gulp.task('rgkarma',rg.karma());
-gulp.task('rgcoverkarma',rg.ensureTestCoverage({coverageDirectory :'coverage/client'}))
+gulp.task('rgkarma',rg.karma(
+  { karmaConf:'',
+    files : [
+    'client/bower_components/angular/angular.js',
+    'client/bower_components/angular-mocks/angular-mocks.js',
+    'client/app/**/*.js'],
+    plugins : [ 'karma-coverage','karma-mocha','karma-chai','karma-phantomjs-launcher'],
+    preprocessors : {'./client/app/**/!(*.spec).js':'coverage'},
+    frameworks: ['mocha', 'chai'],
+    reporters: ['progress', 'coverage'],
+    browsers: ['PhantomJS'],
+    logLevel:'debug',
+    coverageReporter: {
+       reporters: [{type:'json'},{type:'html'},{type:'text-summary'}],
+       dir : './coverage/client/'
+     }
+  }
+  ));
+gulp.task('rgcoverkarma',rg.ensureTestCoverage({coverageDirectory :'coverage/client/*'}))
 gulp.task('client-ci-rg',gulpSequence('rgkarma','rgcoverkarma'))
