@@ -11,11 +11,7 @@ angular.module('lib1',[])
       }
     },
     coverageFail : function(key){
-      var something = {
-        foo : function(){
-          return 'bar'
-        }
-      }
+      var something = {        foo : function(){          return 'bar'        }      }
       return something[key]();
     },
     coverageFail2 : function(input){
