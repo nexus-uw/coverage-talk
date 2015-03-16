@@ -1,62 +1,183 @@
-# Unit Test Coverage using Istabul.
-- What is it.
-- Why does anyone care.
-- When can it be integrated into projects.
+layout: true
+class: middle
+---
 
-# What is it.
-Istanbul, formally known as Constantinople.
-Formly the capital of the eastern roman empire, then Byzantine Empire before being captured by the Ottomans in 1453 (double check date).
-![](http://en.wikipedia.org/wiki/Fall_of_Constantinople#mediaviewer/File:Dardanelles_Gun_Turkish_Bronze_15c.png). 
+class: center, middle, inverse
 
-#Or
-a code coverage tools for Javascript.
+# Istanbul
+![](imgs/Dardanelles_Gun_Turkish_Bronze_15c.png)
+
+
+---
+
+#What is it?
+ Istanbul is a code coverage tools for Javascript that allows for us to calculate how well our tests exercise the code base. 
+
+
 [gotwarlost/istanbul](https://github.com/gotwarlost/istanbul)
 
->Since all the good ones are taken. Comes from the loose association of ideas across coverage, carpet-area coverage, the country that makes good carpets and so on...
+---
+
+#Istanbul calculates 4 coverage metrics
+- __Statements__:  number of separate code statements (single command)
+- __Branches__: number of control paths.
+- __Functions__: number of declared functions.
+- __Lines__: number of lines of code executed at least once (a single line of text, can contain multiple statements).
+
+#And expresses coverage as
+
+```
+ reached/executed at least once / total appearances in the code
+```
+
+---
+class: center, middle, inverse
+ 
+# Why should we use it?
+
+---
+class: center, middle, inverse
+
+# Because it results in better code.
+
+---
+
+- A code base with high code coverage has been throughly tested and has a lower chance of containing bugs than a code base with low code coverage.
+
+- Shows where the code base is lacking in tests.
+
+- Improves the test suite by forcing the tests to consider all expected cases, not just the successful ones.
+
+- Helps to detect dead code. If the line/function/use-case can not be covered, then it is probably dead code.
 
 
-Test coverage is a collection of 4 interconnected metrics expressing how much of the source code is reached by the unit test suite.
-- Statements:  number of seperate code statements (section of code ended with a semi colon or a newline)
-- Branches: how many different logic flows are executed at least once.
-- Functions: number of declared functions excuted at least once.
-- Lines: number of lines of code executed at least once (a line text).
+---
+class: center, middle, inverse
+# Where Code Coverage Fails
+As shown through trivial examples
 
 
-also, not part of code coverage but important never less important to note: Ignored statements, branches, functions, and lines
-For when simple statements would take more to mock than they are worth. 
-[[todo: link]]
+![](imgs/bAPfBDRF4Hg0U.gif)
 
-express coverage as  executed by unit tests / total appearances in the code
+---
 
-# why should we have it
-- moves testing from just the expected successful case, to all expected cases
-- covers all tests
-- sets the bar higher for writting code and the tests that go with it
-- if cant hit line, then it is junk or the tests need to be better mocked
+# Just because a statement gets executed once, does not mean that it will work in all instances
+```javascript
+function failFunc(key){
+  var something = { 
+    foo : function() {
+      return 'bar';
+    }
+  };
+  return something[key]();
+}
+failFunc('foo');
+```
 
-# where it fails
-- just because a statement gets executed once, does not mean that it will work in all instances
-[[insert example]]
+---
 
-- does not test execution paths [[TODO: check terminology]]
-[[insert examples]]
+# It will not catch what is not coded.
+```javascript
+makeRequestToFlakyAPI()
+.then(function(){
+  hideLoadingSpinners();
+});
 
-- does not test what is not written
-[[create example of optimistic code]]
+```
+---
+ 
+# 100% coverage can be a lie.
+```javascript
+function failFunc(input) {
+  var tmp = 0;
 
-- and like all tests, if the code and tests are both wrong, then :(
-[[create example of complete shit]]
+  if(input > 0){
+    tmp++;
+  }
+
+  if(input < 0){
+    tmp--;
+  }
+
+  return input / tmp;
+}
+
+failFunc(1);
+failFunc(-1);
+```
+.footer Istanbul calculates edge pair coverage, for which the above has 100%, but under prime path (or complete coverage), the above would have ~66.66...%.
+
+---
+
+class: center, middle, inverse
+
+# How to Setup Istanbul Test Coverage
+
+---
+ 
+## Mocha
+```javascript
+  gulp.task('pre-mocha',rg.prepareMochaTestCoverage({
+    filesToCover : ['server/**/!(*.spec).js']
+  }));
+
+  gulp.task('mocha',rg.mocha({ files : [ 'server/**/*.spec.js' ] }));
+
+  gulp.task('cover-mocha',rg.ensureTestCoverage({ 
+    coverageDirectory : './coverage/server'  //where to search for json coverage file
+  }));
+
+  gulp.task('mocha-ci',gulpSequence('pre-mocha','mocha','cover-mocha'));
+
+```
+
+---
+## Karma
+
+```javascript
+gulp.task('rgkarma',rg.karma({ 
+    karmaConf:'', //disable karma look up for config file
+    files : [
+    'client/bower_components/angular/angular.js',
+    'client/bower_components/angular-mocks/angular-mocks.js',
+    'client/app/**/*.js'],  
+    preprocessors : {'./client/app/**/!(*.spec).js':'coverage'},
+    frameworks: ['mocha', 'chai'],
+    reporters: ['progress', 'coverage'],
+    browsers: ['PhantomJS'],    
+    coverageReporter: {
+       reporters: [{type:'json'},{type:'html'},{type:'text-summary'}],
+       dir : './coverage/client/'
+     }
+  }));
+gulp.task('cover-karma',rg.ensureTestCoverage({ 
+  coverageDirectory : 'coverage/client/*'
+}));
+
+gulp.task('mocha-ci',gulpSequence('karma','cover-karma'));
+
+```
+---
+
+# rangle/rangle-gulp
+
+## Reporters
+rangle-gulp will, by default, use 3 coverage reporters. 
+1. coverage/server/coverage-final.json for the ensureTestCoverage().
+2. a text summary displayed on the command line
+3. coverage/server/index.html for a full human readable coverage report (should be saved as a build artifact  on CircleCI).
 
 
-# Where to use
+## Coverage Thresholds
+All 4 thresholds are set to 100% unless overwritten.
+---
 
-## Circle CI
- - CI jobs -> generates html report (where to include + display)
-[[TODO: suggested mocha and karma ci configs]]
+# And here are some links
 
-## TDD
- - update watch jobs to print coverage summary
-[[TODO: suggested mocha and karma watch configs]]
-# How to use
-I have created a pull request for rangle gulp here: _____ that provides everything needed
+- Slides and some working examples [https://github.com/nexus-uw/coverage-talk](https://github.com/nexus-uw/coverage-talk).
+- [Wikipedia code coverage page ](http://en.wikipedia.org/wiki/Code_coverage)
+- [Coveralls](https://coveralls.io/features): Code coverage CI integration SAS.
+- [UW Testing Course ](https://ece.uwaterloo.ca/~lintan/courses/testing/): Deep dive into all the different code coverage methods.
+
+![](imgs/vVD14D.gif)
 

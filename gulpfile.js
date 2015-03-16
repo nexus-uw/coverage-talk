@@ -18,7 +18,6 @@ gulp.task('rgkarma',rg.karma({
     frameworks: ['mocha', 'chai'],
     reporters: ['progress', 'coverage'],
     browsers: ['PhantomJS'],
-    logLevel:'debug',
     coverageReporter: {
        reporters: [{type:'json'},{type:'html'},{type:'text-summary'}],
        dir : './coverage/client/'

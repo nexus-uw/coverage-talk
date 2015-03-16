@@ -1,6 +1,6 @@
 var expect = require('chai').expect
 var lib1 = require('./lib1');
-xdescribe('function1',function(){
+describe('function1',function(){
   it('should return param2 if param2 is defined',function(){
     expect(lib1.function1(1,2)).to.equal(2);
   });
